@@ -80,7 +80,6 @@ BOOL LLFloaterExploreSounds::postBuild(void)
 
 	childSetAction("play_locally_btn", handle_play_locally, this);
 	childSetAction("play_in_world_btn", handle_play_in_world, this);
-	childSetAction("play_ambient_btn", handle_play_ambient, this);
 	childSetAction("look_at_btn", handle_look_at, this);
 	childSetAction("copy_uuid_btn", handle_copy_uuid, this);
 	childSetAction("stop_btn", handle_stop, this);
@@ -327,50 +326,6 @@ void LLFloaterExploreSounds::handle_play_in_world(void* user_data)
 		gAgent.sendMessage();
 	}
 }
-
-// static
-void LLFloaterExploreSounds::handle_play_ambient(void* user_data)
-{
-	LLParcel *parcel = LLViewerParcelMgr::getInstance()->getAgentParcel();
-	if(!gAgent.isInGroup(parcel->getGroupID()))
-	{	
-		LLChat chat;
-		chat.mSourceType = CHAT_SOURCE_SYSTEM;
-		chat.mText = llformat("Can't play ambient sound: Must be on land you're grouped to.");
-		LLFloaterChat::addChat(chat);
-		return;
-	}
-
-	LLFloaterExploreSounds* floater = (LLFloaterExploreSounds*)user_data;
-	LLScrollListCtrl* list = floater->getChild<LLScrollListCtrl>("sound_list");
-	std::vector<LLScrollListItem*> selection = list->getAllSelected();
-	std::vector<LLScrollListItem*>::iterator selection_iter = selection.begin();
-	std::vector<LLScrollListItem*>::iterator selection_end = selection.end();
-	for( ; selection_iter != selection_end; ++selection_iter)
-	{
-		LLSoundHistoryItem item = floater->getItem((*selection_iter)->getValue());
-		if(item.mID.isNull()) continue;
-		int gain = 0.01f;
-		for(int i = 0; i < 2; i++)
-		{
-			gMessageSystem->newMessageFast(_PREHASH_SoundTrigger);
-			gMessageSystem->nextBlockFast(_PREHASH_SoundData);
-			gMessageSystem->addUUIDFast(_PREHASH_SoundID, item.mAssetID);
-			gMessageSystem->addUUIDFast(_PREHASH_OwnerID, LLUUID::null);
-			gMessageSystem->addUUIDFast(_PREHASH_ObjectID, LLUUID::null);
-			gMessageSystem->addUUIDFast(_PREHASH_ParentID, LLUUID::null);
-			gMessageSystem->addU64Fast(_PREHASH_Handle, gAgent.getRegion()->getHandle());
-			LLVector3d	pos = -from_region_handle(gAgent.getRegion()->getHandle());
-			gMessageSystem->addVector3Fast(_PREHASH_Position, (LLVector3)pos);
-			gMessageSystem->addF32Fast(_PREHASH_Gain, gain);
-
-			gMessageSystem->sendReliable(gAgent.getRegionHost());
-
-			gain = 1.0f;
-		}
-	}
-}
-
 
 // static
 void LLFloaterExploreSounds::handle_look_at(void* user_data)
